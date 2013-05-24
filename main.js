@@ -156,12 +156,12 @@ function Game(){
 		this.calculateCell(x    , y + 1);
 		this.calculateCell(x + 1, y + 1);
 	};
-	this.loadPattern = function(x,y,pattern){
+	this.loadPattern = function(pattern){
 		if(!this.running){
 			for(var i = 0; i < pattern.length; i++){
 				for(var j = 0; j < pattern[0].length; j++){
-					this.setNewCellValue(x + j, y + i, pattern[i][j]);
-					this.DrawElement(x + j, y + i, pattern[i][j]);
+					this.setNewCellValue(Math.floor((this._sizeX - pattern[0].length) / 2) + j, Math.floor((this._sizeY - pattern.length) / 2) + i, pattern[i][j]);
+					this.DrawElement(Math.floor((this._sizeX - pattern[0].length) / 2) + j,  Math.floor((this._sizeY - pattern.length) / 2) + i, pattern[i][j]);
 				}
 			}
 			this.saveState();
@@ -210,7 +210,7 @@ function Game(){
 function run(){
 	var game = new Game();
 	game.onFinish = function(){
-		game.loadPattern(24,24,[
+		game.loadPattern([
 			[1, 1, 0],
 			[1, 0, 1],
 			[1, 0, 0]
@@ -218,7 +218,7 @@ function run(){
 	};
 	//game.CreateGrid(200,200,$('#grid'));
 	game.CreateFill(20,$('#grid'));
-	game.loadPattern(20,20,[
+	game.loadPattern([
 		[1, 1, 0],
 		[1, 0, 1],
 		[1, 0, 0]
