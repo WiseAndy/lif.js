@@ -203,7 +203,7 @@ function Game(){
 			var callMethod = function(){
 				self.tick();
 			};
-			this.renderHook = setInterval(callMethod, Math.floor(1 / this.TPS) * 1000);
+			this.renderHook = setInterval(callMethod, (1 / self.TPS) * 1000);
 		}
 	};
 	this.stop = function(){
@@ -215,7 +215,7 @@ function Game(){
 
 function run(){
 	var game = new Game();
-	game.setTPS(100);
+	game.setTPS(2);
 	game.onFinish = function(){
 		game.loadPattern([
 			[1, 1, 0],
