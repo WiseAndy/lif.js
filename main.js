@@ -7,7 +7,10 @@ function Game(){
 	this._sizeX = 0;
 	this._sizeY = 0;
 	this.generation = 0;
+	this.TPS = 10;
+	this.renderHook;
 	this.running = false;
+	this.ready = true;
 	this.rootElement;
 	this.insertStack = [];
 	this.saveState = function(){
@@ -107,11 +110,22 @@ function Game(){
 	};
 	this.getSavedActiveCells = function(){
 		var ret = [];
+		var activeCells = new Set();
 		for(var i = 0; i < this.savedState.length; i++){
 			if(this.savedState[i] > 0){
-				var division = Math.floor(i / this._sizeX);
-				ret.push({ y: division, x: i % this._sizeX });
+				activeCells.add(i                  );//add all neighbours to set, set condition eliminates duplicates
+				activeCells.add(i               + 1);
+				activeCells.add(i - this._sizeX + 1);
+				activeCells.add(i - this._sizeX    );
+				activeCells.add(i - this._sizeX - 1);
+				activeCells.add(i               - 1);
+				activeCells.add(i + this._sizeX - 1);
+				activeCells.add(i + this._sizeX    );
+				activeCells.add(i + this._sizeX + 1);
 			}
+		}
+		for(var i = 0; i < activeCells.length(); i++){
+			ret.push({ y: Math.floor(activeCells.getItem(i) / this._sizeX), x: activeCells.getItem(i) % this._sizeX });
 		}
 		return ret;
 	};
@@ -145,17 +159,6 @@ function Game(){
 		if(this.getSavedCellValue(x + 1, y + 1)){ ret.count++; ret.adjacency[7] = true; };
 		return ret;
 	};
-	this.calculateNeighbourhood = function(x, y){
-		this.calculateCell(x    , y    );
-		this.calculateCell(x + 1, y    );
-		this.calculateCell(x + 1, y - 1);
-		this.calculateCell(x    , y - 1);
-		this.calculateCell(x - 1, y - 1);
-		this.calculateCell(x - 1, y    );
-		this.calculateCell(x - 1, y + 1);
-		this.calculateCell(x    , y + 1);
-		this.calculateCell(x + 1, y + 1);
-	};
 	this.loadPattern = function(pattern){
 		if(!this.running){
 			for(var i = 0; i < pattern.length; i++){
@@ -177,38 +180,42 @@ function Game(){
 		this.saveState();
 	};
 	this.tick = function(){
-		if(this.running){
+		if(this.running && this.ready){
+			this.ready = false;
 			this.processInsertStack();
 			var activeCells = this.getSavedActiveCells();
 			if(activeCells.length === 0){ this.running = false; this.onFinish(); }
 			for(var i = 0; i < activeCells.length; i++){
-				this.calculateNeighbourhood(activeCells[i].x, activeCells[i].y);
+				this.calculateCell(activeCells[i].x, activeCells[i].y);
 			}
 			this.saveState();
-			var self = this;
+			this.ready = true;
+			//TODO apply adjacency styles after saving to get correct behaviour
+		}
+	};
+	this.setTPS = function(_tps){
+		this.TPS = _tps;
+	};
+	this.start = function(){
+		var self = this;
+		if(!this.running){
+			this.running = true;
 			var callMethod = function(){
 				self.tick();
 			};
-			//TODO apply adjacency styles after saving to get correct behaviour
-			setTimeout(callMethod,100);
-		}
-	};
-	this.start = function(){
-		if(!this.running){
-			this.running = true;
-			this.tick();
+			this.renderHook = setInterval(callMethod, Math.floor(1 / this.TPS) * 1000);
 		}
 	};
 	this.stop = function(){
 		this.running = false;
+		clearInterval(this.renderHook);
 	};
-	this.onFinish = function(){
-	
-	};
+	this.onFinish = function(){};
 }
 
 function run(){
 	var game = new Game();
+	game.setTPS(100);
 	game.onFinish = function(){
 		game.loadPattern([
 			[1, 1, 0],
@@ -217,7 +224,7 @@ function run(){
 		]);
 	};
 	//game.CreateGrid(200,200,$('#grid'));
-	game.CreateFill(20,$('#grid'));
+	game.CreateFill(10,$('#grid'));
 	game.loadPattern([
 		[1, 1, 0],
 		[1, 0, 1],
@@ -228,6 +235,45 @@ function run(){
 	});
 }
 
+function Set(){
+	var _array = [];
+	var _index = [];
+	this.add = function(_key){
+		if(!this.contains(_key)){ //implemented as a set
+			_array[_key.toString()] = _key;
+			_index.push(_key);
+		}
+	};
+	this.remove = function(_key){
+		if(this.contains(_key)){
+			delete _array[_key.toString()];
+			for(var i = 0; i < _index.length; i++){
+				if(_index[i] == _key){
+					_index.splice(i,1);
+					break; 
+				}
+			}
+		}
+	};
+	this.contains = function(_key){
+		return _array[_key.toString()] != undefined ? true : false; //quicker than using in keyword
+	};
+	this.length = function(){
+		return _index.length; //advantage of having an index set is we can wrap around the native length function for efficient calculation
+	};
+	this.keyArray = function(){
+		return _index.slice(0); //trick to efficiently clone an array
+	};
+	this.getItem = function(i){ //useful feature for stepping into dictionary when your not concerned about the key value i.e. printing all objects or sampling
+		return _array[_index[i].toString()];
+	};
+	this.clear = function(){
+		_index = null; _array = null; //missing this line is the best way of causing memory leaks, setting to null will remove any references so the garbage collector will collect the hanging objects
+		_index = []; _array = [];
+	};
+}
+
 run();
+
 
 })();
