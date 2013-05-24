@@ -37,19 +37,7 @@ function Game(){
 			}
 		}
 	},
-	this.Create = function(sizeX, sizeY, rootElement){
-		this._sizeX = sizeX;
-		this._sizeY = sizeY;
-		this.rootElement = rootElement;
-		for(var i = 0; i < sizeY; i++){
-			for(var j = 0; j < sizeX; j++){
-				this.savedState.push(0);
-				this.elementList.push(this.ElementFactory(j,i,this.rootElement));
-			}
-		}
-		this.newState = this.savedState.slice(0);
-	};
-	this.CreateNew = function(sizeX, sizeY, rootElement){
+	this.CreateGrid = function(sizeX, sizeY, rootElement){
 		var self = this;
 		this._sizeX = sizeX;
 		this._sizeY = sizeY;
@@ -72,34 +60,57 @@ function Game(){
 		});
 		this.newState = this.savedState.slice(0);
 	};
+	this.CreateFill = function(elementSize, rootElement){
+		var self = this;
+		this._sizeX = Math.floor(rootElement.width() / elementSize);
+		this._sizeY = Math.floor(rootElement.height() / elementSize);
+		this.rootElement = rootElement;
+		var gridHTML = "";
+		for(var i = 0; i < this._sizeY; i++){
+			for(var j = 0; j < this._sizeX; j++){
+				this.savedState.push(0);
+				gridHTML += '<div x="'+j+'" y="'+i+'" style="height: '+elementSize+'px; width: '+elementSize+'px; top: '+i * elementSize+'px; left: '+j * elementSize+'px;"></div>';
+			}
+		}
+		this.rootElement.append(gridHTML);
+		$('div', this.rootElement).each(function(i, el) {
+			self.elementList.push($(el));
+		});
+		this.rootElement.click(function(ev){
+			self.insertStack.push({x: parseInt($(ev.target).attr('x')), y: parseInt($(ev.target).attr('y'))});
+			self.DrawElement(parseInt($(ev.target).attr('x')), parseInt($(ev.target).attr('y')), 1);
+		});
+		this.newState = this.savedState.slice(0);
+	};
+
 	this.getSavedCellValue = function(x,y){ //TODO cycles can be saved here if check can be removed
 		if(x >= 0 && y >= 0 && x < this._sizeX && y < this._sizeY){
-			return this.savedState[(y * this._sizeY) + x];
+			return this.savedState[(y * this._sizeX) + x];
 		} else {
 			return 0;
 		}
 	};
 	this.getCellElement = function(x,y){
 		if(x >= 0 && y >= 0 && x < this._sizeX && y < this._sizeY){
-			return this.elementList[(y * this._sizeY) + x];
+			return this.elementList[(y * this._sizeX) + x];
 		}
 	};
 	this.getNewCellValue = function(x,y){
 		if(x >= 0 && y >= 0 && x < this._sizeX && y < this._sizeY){
-			return this.newState[(y * this._sizeY) + x];
+			return this.newState[(y * this._sizeX) + x];
 		}
 	};
 	this.setNewCellValue = function(x,y,val){
 		if(x >= 0 && y >= 0 && x < this._sizeX && y < this._sizeY){
-			this.newState[(y * this._sizeY) + x] = val ? this.getSavedCellValue(x,y) + 1 : 0;
+			this.newState[(y * this._sizeX) + x] = val ? this.getSavedCellValue(x,y) + 1 : 0;
 		}
 	};
 	this.getSavedActiveCells = function(){
 		var ret = [];
 		for(var i = 0; i < this.savedState.length; i++){
 			if(this.savedState[i] > 0){
-				var division = Math.floor(i / this._sizeY);
-				ret.push({ y: division, x: i % this._sizeY });
+				var division = Math.floor(i / this._sizeX);
+				ret.push({ y: division, x: i % this._sizeX });
 			}
 		}
 		return ret;
@@ -205,8 +216,9 @@ function run(){
 			[1, 0, 0]
 		]);
 	};
-	game.CreateNew(100,100,$('#grid'));
-	game.loadPattern(24,24,[
+	//game.CreateGrid(200,200,$('#grid'));
+	game.CreateFill(20,$('#grid'));
+	game.loadPattern(20,20,[
 		[1, 1, 0],
 		[1, 0, 1],
 		[1, 0, 0]
